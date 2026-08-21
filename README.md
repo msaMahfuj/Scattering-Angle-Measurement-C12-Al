@@ -27,20 +27,33 @@ Each CR-39 sheet was scanned on both its front and back surfaces. Therefore, fou
 - B-front
 - B-back
 
-The datasets contain the centroid coordinates of etched ion tracks extracted from PitFit. The primary coordinates used in the analysis are:
+The datasets contain the centroid coordinates of etched ion tracks extracted using PitFit. The primary coordinates used in the analysis are:
 
 - `GravX`
 - `GravY`
 
-The coordinates are expressed in micrometers (µm).
+Coordinates are expressed in micrometers (µm).
+
+The detector geometry is defined as:
+
+- z_A,f = 0
+- z_A,b = t_A
+- z_B,f = t_A + t_Al
+- z_B,b = t_A + t_Al + t_B
+
+where:
+
+- t_A = post-etch thickness of Sheet A
+- t_B = post-etch thickness of Sheet B
+- t_Al = thickness of the aluminum target
 
 ---
 
-# Analysis Workflow
+## Analysis Workflow
 
 The same analysis procedure was applied independently to all six beam energies.
 
-## 1. Data Loading
+### 1. Data Loading
 
 For each energy, four CSV files corresponding to the four detector surfaces are loaded:
 
@@ -55,134 +68,91 @@ Entries with missing values in `GravX` or `GravY` are removed before further ana
 
 ---
 
-## 2. Front-Back Alignment
+### 2. Front-Back Alignment
 
 The front and back surfaces of a CR-39 detector may have different coordinate origins due to scanning and measurement offsets.
 
-For each detector sheet, coordinate differences are calculated as:
+For each detector sheet, the coordinate differences are calculated as:
 
-\[
-\Delta x = x_{\mathrm{back}} - x_{\mathrm{front}}
-\]
+**Δx = x_back − x_front**
 
-\[
-\Delta y = y_{\mathrm{back}} - y_{\mathrm{front}}
-\]
+**Δy = y_back − y_front**
 
-A two-dimensional Kernel Density Estimation (KDE) is applied to the \((\Delta x,\Delta y)\) distribution.
+A two-dimensional Kernel Density Estimation (KDE) is applied to the **(Δx, Δy)** distribution.
 
 The peak of the KDE distribution gives the relative translational offset between the front and back coordinate systems.
 
 The back-surface coordinates are then corrected using:
 
-\[
-x_{\mathrm{back}}' =
-x_{\mathrm{back}} -
-\Delta x_{\mathrm{peak}}
-\]
+**x′_back = x_back − Δx_peak**
 
-\[
-y_{\mathrm{back}}' =
-y_{\mathrm{back}} -
-\Delta y_{\mathrm{peak}}
-\]
+**y′_back = y_back − Δy_peak**
 
 This alignment procedure is performed independently for both Sheet A and Sheet B.
 
 ---
 
-## 3. Front-Back Track Matching
+### 3. Front-Back Track Matching
 
-After alignment, tracks on the front and back surfaces of each CR-39 sheet are matched.
-
-A KD-tree nearest-neighbour search is used to identify candidate tracks.
+After alignment, tracks on the front and back surfaces of each CR-39 sheet are matched using a KD-tree nearest-neighbour search.
 
 The matching radius is determined from the spatial spread of the alignment distribution:
 
-\[
-r = 4\sigma
-\]
+**r = 4σ**
 
 Only unique one-to-one matches are retained. Ambiguous matches and tracks without a valid counterpart are excluded.
 
 This produces reconstructed track pairs for:
 
-- Sheet A: incident trajectories before the aluminum target.
-- Sheet B: outgoing trajectories after the aluminum target.
+- **Sheet A:** Incident trajectories before the aluminum target.
+- **Sheet B:** Outgoing trajectories after the aluminum target.
 
 ---
 
-## 4. Three-Dimensional Trajectory Reconstruction
+### 4. Three-Dimensional Trajectory Reconstruction
 
 For every matched front-back track pair, a three-dimensional trajectory vector is reconstructed.
 
 For Sheet A:
 
-\[
-\vec{v}_A =
-\left(
-x_{A,b}-x_{A,f},
-y_{A,b}-y_{A,f},
-t_A
-\right)
-\]
+**v⃗_A = (x_A,b − x_A,f, y_A,b − y_A,f, dz_A)**
 
 For Sheet B:
 
-\[
-\vec{v}_B =
-\left(
-x_{B,b}-x_{B,f},
-y_{B,b}-y_{B,f},
-t_B
-\right)
-\]
+**v⃗_B = (x_B,b − x_B,f, y_B,b − y_B,f, dz_B)**
 
-where \(t_A\) and \(t_B\) are the post-etch thicknesses of the corresponding CR-39 sheets.
+where:
 
-The unit vectors are calculated as:
+- dz_A = post-etch thickness of Sheet A
+- dz_B = post-etch thickness of Sheet B
 
-\[
-\hat{v} =
-\frac{\vec{v}}
-{|\vec{v}|}
-\]
+The corresponding unit vectors are calculated as:
 
-The trajectory reconstructed in Sheet A represents the direction of the carbon ion before passing through the aluminum target, while the trajectory reconstructed in Sheet B represents the direction after transmission through the target.
+**v̂ = v⃗ / |v⃗|**
+
+The trajectory reconstructed in Sheet A represents the incident direction of the carbon ion before passing through the aluminum target, while the trajectory reconstructed in Sheet B represents the outgoing direction after transmission through the target.
 
 ---
 
-## 5. Cross-Matching of Incident and Outgoing Tracks
+### 5. Cross-Matching of Incident and Outgoing Tracks
 
-The trajectory reconstructed in Sheet A is projected to the plane of the front surface of Sheet B.
+The trajectory reconstructed in Sheet A is projected to the plane of the front surface of Sheet B using the reconstructed direction and the known separation between the detector sheets.
 
-The projected position is calculated using the reconstructed direction and the known separation between the detector sheets.
-
-A KD-tree nearest-neighbour search is then used to identify the corresponding trajectory in Sheet B.
+The projected position is then compared with the reconstructed tracks in Sheet B using a KD-tree nearest-neighbour search.
 
 Only successfully cross-matched trajectories are retained for the final scattering-angle calculation.
 
 ---
 
-## 6. Scattering-Angle Calculation
+### 6. Scattering-Angle Calculation
 
-For each cross-matched event, the scattering angle is calculated from the angle between the incident and outgoing trajectory vectors:
+For each cross-matched event, the scattering angle is calculated from the angle between the incident and outgoing trajectory unit vectors:
 
-\[
-\theta =
-\cos^{-1}
-\left(
-\hat{v}_A
-\cdot
-\hat{v}_B
-\right)
-\]
+**θ = cos⁻¹(v̂_A · v̂_B)**
 
 The dot product is constrained to the range:
 
-\[
-[-1,1]
-\]
+**−1 ≤ v̂_A · v̂_B ≤ 1**
 
 to ensure numerical stability.
 
@@ -190,48 +160,30 @@ The resulting event-by-event scattering angles form the experimental angular dis
 
 ---
 
-## 7. Angular Distribution and Gaussian Fitting
+### 7. Angular Distribution and Gaussian Fitting
 
 The scattering angles are histogrammed using 120 bins.
 
 The central region of the distribution is characterized using a Gaussian function with a constant background:
 
-\[
-f(\theta) =
-A
-\exp
-\left[
--\frac{1}{2}
-\left(
-\frac{\theta-\mu}{\sigma}
-\right)^2
-\right]
-+
-C
-\]
+**f(θ) = A exp[−½((θ − μ)/σ)²] + C**
 
 where:
 
-- \(A\) is the amplitude,
-- \(\mu\) is the Gaussian centroid,
-- \(\sigma\) is the Gaussian width,
-- \(C\) is a constant background.
+- **A** = amplitude
+- **μ** = Gaussian centroid
+- **σ** = Gaussian width
+- **C** = constant background
 
-The full width at half maximum is calculated as:
+The Full Width at Half Maximum (FWHM) is calculated as:
 
-\[
-\mathrm{FWHM}
-=
-2\sqrt{2\ln2}\sigma
-\approx
-2.35482\sigma
-\]
+**FWHM = 2√(2 ln 2) σ ≈ 2.35482σ**
 
 The fitted parameters are used to characterize the scattering-angle distribution at each projectile energy.
 
 ---
 
-# Repository Structure
+## Repository Structure
 
 ```text
 carbon-ion-aluminum-scattering/
@@ -298,7 +250,7 @@ carbon-ion-aluminum-scattering/
 
 ---
 
-# Software Requirements
+## Software Requirements
 
 The experimental data analysis was performed using Python.
 
@@ -315,20 +267,20 @@ The Monte Carlo simulation component was developed using GEANT4.
 
 ---
 
-# Contents
+## Repository Contents
 
-- **data/raw/** contains the original experimental CSV datasets.
-- **data/processed/** contains processed datasets generated during the analysis.
-- **analysis/** contains the analysis notebooks for each projectile energy.
-- **simulations/geant4/** contains the GEANT4 simulation source code and related files.
-- **figures/experimental/** contains figures generated from the CR-39 experimental analysis.
-- **figures/simulation/** contains figures generated from GEANT4 simulations.
-- **results/** contains the final scattering-angle datasets and energy-dependent comparison results.
-- **docs/** contains additional documentation describing the methodology and datasets.
+- **data/raw/** — Original experimental CSV datasets.
+- **data/processed/** — Processed datasets generated during the analysis.
+- **analysis/** — Analysis notebooks for the six projectile energies.
+- **simulations/geant4/** — GEANT4 simulation source code and related files.
+- **figures/experimental/** — Figures generated from the CR-39 experimental analysis.
+- **figures/simulation/** — Figures generated from the GEANT4 simulations.
+- **results/** — Final scattering-angle datasets and energy-dependent comparison results.
+- **docs/** — Additional documentation describing the methodology and datasets.
 
 ---
 
-# Author
+## Author
 
 **Md. Shamsul Alam Mahfuj**
 
@@ -338,6 +290,6 @@ University of Chittagong, Bangladesh
 
 ---
 
-# License
+## License
 
 This project is distributed under the license specified in the `LICENSE` file.
