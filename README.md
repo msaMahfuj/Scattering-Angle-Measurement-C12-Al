@@ -211,12 +211,12 @@ carbon-ion-aluminum-scattering/
 │       └── 110.0_MeV_per_u/
 │
 ├── analysis/
-│   ├── 21.0_MeV_per_u.ipynb
-│   ├── 28.5_MeV_per_u.ipynb
-│   ├── 83.0_MeV_per_u.ipynb
-│   ├── 102.5_MeV_per_u.ipynb
-│   ├── 107.0_MeV_per_u.ipynb
-│   └── 110.0_MeV_per_u.ipynb
+│   ├── 21.0_MeV_per_u.py
+│   ├── 28.5_MeV_per_u.py
+│   ├── 83.0_MeV_per_u.py
+│   ├── 102.5_MeV_per_u.py
+│   ├── 107.0_MeV_per_u.py
+│   └── 110.0_MeV_per_u.py
 │
 ├── simulations/
 │   └── geant4/
