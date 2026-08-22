@@ -1013,7 +1013,7 @@ with PdfPages(
             ),
             linewidth=2.2,
             color="teal",
-            label="Fit (μ = 0.088°)"
+            label=f"Fit (μ = {mu_fit:.3f}°)"
         )
 
     bin_w = (
