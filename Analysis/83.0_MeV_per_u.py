@@ -25,6 +25,8 @@ from pathlib import Path
 
 energy_label = "83 MeV/n"
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 cfg = {
     "front_A": BASE_DIR / "data/processed/83.0_MeV_per_u/T064_Front.csv",
     "back_A": BASE_DIR / "data/processed/83.0_MeV_per_u/T064_Back.csv",
