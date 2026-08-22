@@ -4,13 +4,17 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
 from scipy.spatial import cKDTree
 from scipy.stats import gaussian_kde
 from scipy.optimize import curve_fit
+
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.ticker import AutoMinorLocator
+
 import os
 import time
+from pathlib import Path
 
 
 # ============================================================
@@ -19,19 +23,21 @@ import time
 
 energy_label = "110 MeV/n"
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 cfg = {
-    "front_A": "../data/processed/110.0_MeV_per_u/T052_Front.csv",
-    "back_A": "../data/processed/110.0_MeV_per_u/T052_Back.csv",
-    "front_B": "../data/processed/110.0_MeV_per_u/T053_Front.csv",
-    "back_B": "../data/processed/110.0_MeV_per_u/T053_Back.csv",
-    
+    "front_A": BASE_DIR / "data/processed/110.0_MeV_per_u/T052_Front.csv",
+    "back_A": BASE_DIR / "data/processed/110.0_MeV_per_u/T052_Back.csv",
+    "front_B": BASE_DIR / "data/processed/110.0_MeV_per_u/T053_Front.csv",
+    "back_B": BASE_DIR / "data/processed/110.0_MeV_per_u/T053_Back.csv",
+
     "tag_A": "T052",
     "tag_B": "T053",
 
     "thick_A_post": 0.384,
     "thick_B_post": 0.387,
 
-    "out_folder": "../results/110.0_MeV_per_u"
+    "out_folder": BASE_DIR / "results/110.0_MeV_per_u"
 }
 
 al_thickness_mm = 0.10
@@ -51,10 +57,15 @@ rng = np.random.default_rng(12345)
 # ============================================================
 
 out_folder = cfg["out_folder"]
-os.makedirs(out_folder, exist_ok=True)
+
+out_folder.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 tag_A = cfg["tag_A"]
 tag_B = cfg["tag_B"]
+
 
 out_csv = os.path.join(
     out_folder,
